@@ -1,0 +1,35 @@
+# Dependency folders
+/vendor
+/node_modules
+
+# Laravel-specific
+/public/storage
+/public/hot
+/public/build
+/storage/*.key
+/storage/app/public
+/storage/framework/cache/data
+/storage/framework/sessions
+/storage/framework/views
+/storage/logs
+
+# Environment & config
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+.phpunit.cache
+Homestead.json
+Homestead.yaml
+auth.json
+
+# Log files
+*.log
+npm-debug.log
+yarn-error.log
+
+# IDE/editor
+/.idea
+/.vscode
+/.fleet
+

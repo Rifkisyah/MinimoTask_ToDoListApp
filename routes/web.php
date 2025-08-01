@@ -88,8 +88,11 @@ Route::post('/user/reset-password', function (Illuminate\Http\Request $request) 
         : back()->withErrors(['email' => [__($status)]]);
 })->middleware('guest')->name('password.update');
 
-// ================================================ Add-ToDo ====================================================================
+// ================================================ ToDo Item Controller ====================================================================
 
 Route::get('/user/home', [ToDoItemController::class, 'home'])->name('user.home');
 
+Route::post('/user/home', [ToDoItemController::class, 'addToDoList'])->name('user.add-todo');
+// Route::get('/user/home/{id}', [ToDoItemController::class, 'editToDoList'])->name('user.edit-todo');
+// Route::post('/user/home', [ToDoItemController::class, 'deleteToDoList'])->name('user.delete-todo');
 

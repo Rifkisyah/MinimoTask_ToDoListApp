@@ -229,6 +229,30 @@
     </div>
   </header>
 
+  <div id="todoList" class="grid">
+    @forelse ($item as $todo)
+      <div class="card">
+        <div class="card-content">
+          <h3>{{ $todo->title }}</h3>
+          <hr>
+          <div class="todo-lines">
+            @foreach (explode("\n", $todo->to_do_content) as $line)
+              <label><input type="checkbox"> {{ $line }}</label>
+            @endforeach
+          </div>
+        </div>
+        <hr style="margin: 10px 0;">
+        <small>Created at: {{ $todo->created_at->format('d M Y H:i') }}</small>
+        <div class="actions">
+          <img src="{{ asset('assets/img/pen.png') }}" onclick="editTodo(this)" style="cursor: pointer; width: 30px; height: 30px;">
+          <img src="{{ asset('assets/img/bin.png') }}" onclick="deleteTodo(this)" style="cursor: pointer; width: 30px; height: 30px;">
+        </div>
+      </div>
+    @empty
+      
+    @endforelse
+  </div>  
+
   <div id="todoList" class="grid"></div>
   <p id="emptyMessage" 
     style="
@@ -237,38 +261,44 @@
       margin-top: 250px; 
       font-size: 25px;"
     >
-      No to-do has been created yet
+      No to-do Lists has been created yet
   </p>
 
 
   <button class="add-btn" onclick="openForm()">＋</button>
 
+  {{-- modal --}}
   <div id="todoModal" class="modal">
     <div class="modal-content">
       <h2 id="formTitle">Add To-Do</h2>
-      <label for="title">Title</label>
-      <input type="text" id="title" placeholder="input to-do title here......" 
-        style="
-          width: 100%;
-          padding: 10px;
-          margin-bottom: 10px;
-          border-radius: 6px;
-          border: 1px solid #ccc;"
-      />
 
-      <label>To-Do Item List</label>
-      <div id="todoInputsContainer" class="todo-input-scroll">
-        <input type="text" placeholder="To-Do Item 1" class="todo-input" />
-        <input type="text" placeholder="To-Do Item 2" class="todo-input" />
-        <input type="text" placeholder="To-Do Item 3" class="todo-input" />
-      </div>
+      <form action="{{ route('user.add-todo') }}" method="POST" onsubmit="submitTodo(event)">
+        @csrf
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" placeholder="input to-do title here......" 
+          style="
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;"
+        />
 
-      <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px;">
-        <button type="button" onclick="addTodoInput()" style="flex:1; background: #4CAF50;">Add To-Do Item</button>
-        <button type="button" onclick="removeTodoInput()" style="flex:1; background: #dc3545;">Delete To-Do Item</button>
-      </div>
+        <label>To-Do Item List</label>
+        <div id="todoInputsContainer" class="todo-input-scroll">
+          <input type="text" name="to_do_content[]" placeholder="To-Do Item 1" class="todo-input" />
+          <input type="text" name="to_do_content[]" placeholder="To-Do Item 2" class="todo-input" />
+          <input type="text" name="to_do_content[]" placeholder="To-Do Item 3" class="todo-input" />
+        </div>
 
-      <button onclick="submitTodo()" style="width: 100%;">Save</button>
+        <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px;">
+          <button type="button" onclick="addTodoInput()" style="flex:1; background: #4CAF50;">Add To-Do Item</button>
+          <button type="button" onclick="removeTodoInput()" style="flex:1; background: #dc3545;">Delete To-Do Item</button>
+        </div>
+
+        <button type="submit" style="width: 100%;">Save</button>
+      </form>
+
     </div>
   </div>
 
@@ -365,49 +395,44 @@
       }
     }
 
-    function submitTodo() {
+    function submitTodo(event) {
+      event.preventDefault(); // Mencegah reload
+
       const title = document.getElementById('title').value.trim();
       const inputs = document.querySelectorAll('.todo-input');
       const lines = Array.from(inputs).map(input => input.value.trim()).filter(v => v !== "");
 
       if (!title || lines.length === 0) {
-        // FIXME
         return alert("Mohon isi semua field.");
       }
 
-      const waktu = new Date().toLocaleDateString('en-US') + ' - ' +
-                    new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+      // Buat form secara dinamis dan kirim POST ke Laravel
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '{{ route("user.add-todo") }}';
 
-      const content = `
-        <div class="card-content">
-          <h3>${title}</h3>
-          <hr>
-          <div class="todo-lines">
-            ${lines.map(line => `<label><input type="checkbox"> ${line}</label>`).join("")}
-          </div>
-        </div>
-        <hr style="margin: 10px 0;">
-        <small>Created at: ${waktu}</small>
-        <div class="actions">
-          <img src="{{ asset('assets/img/pen.png') }}" onclick="editTodo(this)" style="cursor: pointer; width: 30px; height: 30px;">
-          <img src="{{ asset('assets/img/bin.png') }}" onclick="hapusTodo(this)" style="cursor: pointer; width: 30px; height: 30px;">
-        </div>
-      `;
+      const csrf = document.querySelector('input[name="_token"]');
+      form.appendChild(csrf.cloneNode());
 
-      if (editTarget) {
-        editTarget.innerHTML = content;
-      } else {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = content;
-        document.getElementById('todoList').appendChild(card);
-      }
+      const titleInput = document.createElement('input');
+      titleInput.type = 'hidden';
+      titleInput.name = 'title';
+      titleInput.value = title;
+      form.appendChild(titleInput);
 
-      closeForm();
-      updateEmptyMessage();
+      lines.forEach(line => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'to_do_content[]';
+        input.value = line;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
     }
 
-    function hapusTodo(button) {
+    function deleteTodo(button) {
       if (confirm("Hapus To-Do ini?")) {
         const card = button.closest('.card');
         card.remove();
@@ -429,6 +454,10 @@
       const emptyMessage = document.getElementById("emptyMessage");
       emptyMessage.style.display = todoList.children.length === 0 ? "block" : "none";
     }
+
+    window.onload = function () {
+      updateEmptyMessage();
+    };
   </script>
 
 </body>

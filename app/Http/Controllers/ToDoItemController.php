@@ -22,6 +22,11 @@ class ToDoItemController extends Controller
         return view('user.home', compact('user'));
     }
 
+    public function addToDoList()
+    {
+        
+    }
+
     public function index()
     {
         //

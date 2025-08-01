@@ -9,8 +9,8 @@
 <body>
     <section class="hero">
         <div class="hero-content">
-            <h1>Organize Your Day</h1>
-            <p>Simple and intuitive To-Do List to boost your productivity.</p>
+            <h1>Welcome<br> To MinimoTask</h1>
+            <p>Simple and intuitive To-Do List App to boost your productivity.</p>
             <a href="{{ Route('user.login') }}" class="btn">Get Started</a>
         </div>
         <div class="hero-image">

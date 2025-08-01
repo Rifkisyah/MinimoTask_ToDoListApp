@@ -211,7 +211,7 @@
 <body>
 
   <header>
-    <h1>To-Do List | Welcome {{ $user->username }}</h1>
+    <h1>MinimoTask | Welcome {{ $user->username }}</h1>
     <div class="menu-container" id="menuContainer">
       <button class="menu-button" onclick="toggleMenu()">☰</button>
       <div class="menu-dropdown">
@@ -229,22 +229,34 @@
     </div>
   </header>
 
-
-
   <div id="todoList" class="grid"></div>
-  <p id="emptyMessage" style="text-align:center; color:#f6f6f6; margin-top: 250px; font-size: 25px;">
-    No to-do has been created yet
+  <p id="emptyMessage" 
+    style="
+      text-align:center; 
+      color:#f6f6f6; 
+      margin-top: 250px; 
+      font-size: 25px;"
+    >
+      No to-do has been created yet
   </p>
+
 
   <button class="add-btn" onclick="openForm()">＋</button>
 
   <div id="todoModal" class="modal">
     <div class="modal-content">
       <h2 id="formTitle">Add To-Do</h2>
-      <label for="judul">Judul To-Do</label>
-      <input type="text" id="judul" placeholder="To-Do Title" class="todo-input" />
+      <label for="title">Title</label>
+      <input type="text" id="title" placeholder="input to-do title here......" 
+        style="
+          width: 100%;
+          padding: 10px;
+          margin-bottom: 10px;
+          border-radius: 6px;
+          border: 1px solid #ccc;"
+      />
 
-      <label>Daftar Item To-Do</label>
+      <label>To-Do Item List</label>
       <div id="todoInputsContainer" class="todo-input-scroll">
         <input type="text" placeholder="To-Do Item 1" class="todo-input" />
         <input type="text" placeholder="To-Do Item 2" class="todo-input" />
@@ -277,14 +289,14 @@
       if (editCard) {
         editTarget = editCard;
         document.getElementById('formTitle').innerText = "Edit To-Do";
-        document.getElementById('judul').value = editCard.querySelector('h3').innerText;
+        document.getElementById('title').value = editCard.querySelector('h3').innerText;
         const lines = Array.from(editCard.querySelectorAll('.todo-lines label')).map(l => l.textContent.trim());
-        document.getElementById('isi').value = lines.join("\n");
+        document.getElementById('content').value = lines.join("\n");
       } else {
         editTarget = null;
         document.getElementById('formTitle').innerText = "Add To-Do";
-        document.getElementById('judul').value = '';
-        document.getElementById('isi').value = '';
+        document.getElementById('title').value = '';
+        document.getElementById('content').value = '';
       }
     }
 
@@ -306,7 +318,7 @@
       if (editCard) {
         editTarget = editCard;
         document.getElementById('formTitle').innerText = "Edit To-Do";
-        document.getElementById('judul').value = editCard.querySelector('h3').innerText;
+        document.getElementById('title').value = editCard.querySelector('h3').innerText;
 
         const lines = Array.from(editCard.querySelectorAll('.todo-lines label')).map(l => l.textContent.trim());
         container.innerHTML = '';
@@ -321,7 +333,7 @@
       } else {
         editTarget = null;
         document.getElementById('formTitle').innerText = "Add To-Do";
-        document.getElementById('judul').value = '';
+        document.getElementById('title').value = '';
         container.innerHTML = `
           <input type="text" placeholder="To-Do Item 1" class="todo-input" />
           <input type="text" placeholder="To-Do Item 2" class="todo-input" />
@@ -348,16 +360,18 @@
       if (container.children.length > 1) {
         container.removeChild(container.lastElementChild);
       } else {
+        // FIXME
         alert("Minimal harus ada satu item To-Do.");
       }
     }
 
     function submitTodo() {
-      const judul = document.getElementById('judul').value.trim();
+      const title = document.getElementById('title').value.trim();
       const inputs = document.querySelectorAll('.todo-input');
       const lines = Array.from(inputs).map(input => input.value.trim()).filter(v => v !== "");
 
-      if (!judul || lines.length === 0) {
+      if (!title || lines.length === 0) {
+        // FIXME
         return alert("Mohon isi semua field.");
       }
 
@@ -366,7 +380,7 @@
 
       const content = `
         <div class="card-content">
-          <h3>${judul}</h3>
+          <h3>${title}</h3>
           <hr>
           <div class="todo-lines">
             ${lines.map(line => `<label><input type="checkbox"> ${line}</label>`).join("")}

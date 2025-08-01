@@ -88,9 +88,8 @@ Route::post('/user/reset-password', function (Illuminate\Http\Request $request) 
         : back()->withErrors(['email' => [__($status)]]);
 })->middleware('guest')->name('password.update');
 
-// ================================================ model ====================================================================
+// ================================================ Add-ToDo ====================================================================
 
-// Route::get('/user/todos', [ToDoItemController::class, 'index'])->name('user.todos.index');
 Route::get('/user/home', [ToDoItemController::class, 'home'])->name('user.home');
 
 

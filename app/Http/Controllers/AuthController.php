@@ -50,7 +50,7 @@ class AuthController extends Controller
     
         // Coba autentikasi berdasarkan tipe login
         if (Auth::attempt([$login_type => $request->login, 'password' => $request->password])) {
-            return redirect()->route('user.home')->with('success', 'Login successful.');
+            return redirect()->route('user.home');
         }
     
         return redirect()->back()->withErrors(['login' => 'Email/Username or password is incorrect!']);

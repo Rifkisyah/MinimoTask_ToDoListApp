@@ -93,6 +93,9 @@ Route::post('/user/reset-password', function (Illuminate\Http\Request $request) 
 Route::get('/user/home', [ToDoItemController::class, 'home'])->name('user.home');
 
 Route::post('/user/home', [ToDoItemController::class, 'addToDoList'])->name('user.add-todo');
-// Route::get('/user/home/{id}', [ToDoItemController::class, 'editToDoList'])->name('user.edit-todo');
-// Route::post('/user/home', [ToDoItemController::class, 'deleteToDoList'])->name('user.delete-todo');
+Route::get('/user/home/{id}', [ToDoItemController::class, 'editToDoList'])->name('user.edit-todo');
+Route::put('/user/home/{id}', [ToDoItemController::class, 'updateToDoList'])->name('user.update-todo');
+
+Route::delete('/user/home/{id}', [ToDoItemController::class, 'deleteToDo'])->name('user.delete-todo');
+
 

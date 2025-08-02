@@ -201,9 +201,39 @@
       display: block;
     }
 
+    /* Toast Style */
+    .toast-success {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      background-color: #2e7d32; /* Darker green */
+      color: white;
+      padding: 15px 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      font-size: 16px;
+      opacity: 0;
+      z-index: 9999;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+      pointer-events: none;
+    }
+
+    /* Show Animation */
+    .toast-success.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Hide Animation */
+    .toast-success.hide {
+      opacity: 0;
+      transform: translateX(-50%) translateY(100%);
+    }
+
     @media (max-width: 900px) {
       .grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(1, 1fr);
       }
     }
   </style>
@@ -230,8 +260,8 @@
   </header>
 
   <div id="todoList" class="grid">
-    @forelse ($item as $todo)
-      <div class="card">
+    @forelse ($items as $todo)
+      <div class="card" data-id="{{ $todo->id }}">
         <div class="card-content">
           <h3>{{ $todo->title }}</h3>
           <hr>
@@ -244,7 +274,7 @@
         <hr style="margin: 10px 0;">
         <small>Created at: {{ $todo->created_at->format('d M Y H:i') }}</small>
         <div class="actions">
-          <img src="{{ asset('assets/img/pen.png') }}" onclick="editTodo(this)" style="cursor: pointer; width: 30px; height: 30px;">
+          <img src="{{ asset('assets/img/pen.png') }}" onclick="openForm(this.closest('.card'))" style="cursor: pointer; width: 30px; height: 30px;">
           <img src="{{ asset('assets/img/bin.png') }}" onclick="deleteTodo(this)" style="cursor: pointer; width: 30px; height: 30px;">
         </div>
       </div>
@@ -272,8 +302,11 @@
     <div class="modal-content">
       <h2 id="formTitle">Add To-Do</h2>
 
-      <form action="{{ route('user.add-todo') }}" method="POST" onsubmit="submitTodo(event)">
+      <form id="todoForm" method="POST" onsubmit="submitTodo(event)">
         @csrf
+        <input type="hidden" name="_method" id="formMethod" value="POST">
+        <input type="hidden" name="id" id="todo_id" value="">
+
         <label for="title">Title</label>
         <input type="text" id="title" name="title" placeholder="input to-do title here......" 
           style="
@@ -302,6 +335,39 @@
     </div>
   </div>
 
+  <div id="confirmDeleteModal" class="modal">
+    <div class="modal-content">
+      <h2 style="color: #dc3545;">Delete To-Do?</h2>
+      <p>Are you sure you want to delete this to-do?</p>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button onclick="closeDeleteModal()" style="background: #6c757d;">Cancel</button>
+        <form id="deleteForm" method="POST" style="margin: 0;">
+          @csrf
+          @method('DELETE')
+          <button type="submit" style="background: #dc3545;">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="errorModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h3 style="color: #dc3545;">Failed To Save</h3>
+      <p>The input Field is still empty</p>
+      <button onclick="closeErrorModal()" style="margin-top: 20px; background: #dc3545;">OK</button>
+    </div>
+  </div>
+
+  <div id="alertModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h3 style="color: #dcb835;">Warning!</h3>
+      <p>the to-do item must not be less than 1!</p>
+      <button onclick="closeAlertModal()" style="margin-top: 20px; background: #c9bb1f;">OK</button>
+    </div>
+  </div>
+
+  <div id="toastNotification" class="toast-success"></div>
+
   <script>
     let isGrid = true;
     let editTarget = null;
@@ -312,22 +378,6 @@
 
     function toggleMenu() {
       document.getElementById('menuContainer').classList.toggle('active');
-    }
-
-    function openForm(editCard = null) {
-      document.getElementById('todoModal').style.display = 'flex';
-      if (editCard) {
-        editTarget = editCard;
-        document.getElementById('formTitle').innerText = "Edit To-Do";
-        document.getElementById('title').value = editCard.querySelector('h3').innerText;
-        const lines = Array.from(editCard.querySelectorAll('.todo-lines label')).map(l => l.textContent.trim());
-        document.getElementById('content').value = lines.join("\n");
-      } else {
-        editTarget = null;
-        document.getElementById('formTitle').innerText = "Add To-Do";
-        document.getElementById('title').value = '';
-        document.getElementById('content').value = '';
-      }
     }
 
     function toggleView() {
@@ -342,34 +392,50 @@
     }
 
     function openForm(editCard = null) {
-      document.getElementById('todoModal').style.display = 'flex';
-      const container = document.getElementById("todoInputsContainer");
+      const form      = document.getElementById('todoForm');
+      const methodIn  = document.getElementById('formMethod');
+      const idInput   = document.getElementById('todo_id');
+      const titleIn   = document.getElementById('title');
+      const container = document.getElementById('todoInputsContainer');
 
       if (editCard) {
-        editTarget = editCard;
-        document.getElementById('formTitle').innerText = "Edit To-Do";
-        document.getElementById('title').value = editCard.querySelector('h3').innerText;
+        // --- MODE EDIT ---
+        const id       = editCard.dataset.id;
+        const title    = editCard.querySelector('h3').innerText;
+        const lines    = Array.from(editCard.querySelectorAll('.todo-lines label'))
+                              .map(l => l.textContent.trim());
 
-        const lines = Array.from(editCard.querySelectorAll('.todo-lines label')).map(l => l.textContent.trim());
+        document.getElementById('formTitle').innerText = 'Edit To-Do';
+        form.action  = `/user/home/${id}`;               // route update
+        methodIn.value = 'PUT';
+        idInput.value  = id;
+        titleIn.value  = title;
+
+        // isi ulang input list
         container.innerHTML = '';
-        lines.forEach((line, i) => {
-          const input = document.createElement("input");
-          input.type = "text";
-          input.className = "todo-input";
-          input.placeholder = `To-Do Item ${i + 1}`;
-          input.value = line;
-          container.appendChild(input);
+        lines.forEach((line,i) => {
+          const inp = document.createElement('input');
+          inp.type        = 'text';
+          inp.name        = 'to_do_content[]';
+          inp.className   = 'todo-input';
+          inp.placeholder = `To-Do Item ${i+1}`;
+          inp.value       = line;
+          container.appendChild(inp);
         });
+
       } else {
-        editTarget = null;
-        document.getElementById('formTitle').innerText = "Add To-Do";
-        document.getElementById('title').value = '';
+        // --- MODE ADD ---
+        document.getElementById('formTitle').innerText = 'Add To-Do';
+        form.action      = '{{ route("user.add-todo") }}';
+        methodIn.value   = 'POST';
+        idInput.value    = '';
+        titleIn.value    = '';
         container.innerHTML = `
-          <input type="text" placeholder="To-Do Item 1" class="todo-input" />
-          <input type="text" placeholder="To-Do Item 2" class="todo-input" />
-          <input type="text" placeholder="To-Do Item 3" class="todo-input" />
+          <input type="text" name="to_do_content[]" placeholder="To-Do Item 1" class="todo-input" />
         `;
       }
+
+      document.getElementById('todoModal').style.display = 'flex';
     }
 
     function closeForm() {
@@ -385,13 +451,17 @@
       container.appendChild(input);
     }
 
+    function editTodo(button, id) {
+      const card = button.closest('.card');
+      openForm(card, id);
+    }
+
     function removeTodoInput() {
       const container = document.getElementById("todoInputsContainer");
       if (container.children.length > 1) {
         container.removeChild(container.lastElementChild);
       } else {
-        // FIXME
-        alert("Minimal harus ada satu item To-Do.");
+        showAlertModal();
       }
     }
 
@@ -403,23 +473,27 @@
       const lines = Array.from(inputs).map(input => input.value.trim()).filter(v => v !== "");
 
       if (!title || lines.length === 0) {
-        return alert("Mohon isi semua field.");
+        showErrorModal();
+        return;
       }
 
-      // Buat form secara dinamis dan kirim POST ke Laravel
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = '{{ route("user.add-todo") }}';
+      const form = document.getElementById('todoForm');
 
-      const csrf = document.querySelector('input[name="_token"]');
-      form.appendChild(csrf.cloneNode());
+      // Pastikan tidak ada input to_do_content[] duplikat
+      const oldInputs = form.querySelectorAll('input[name="to_do_content[]"]');
+      oldInputs.forEach(input => input.remove());
 
-      const titleInput = document.createElement('input');
-      titleInput.type = 'hidden';
-      titleInput.name = 'title';
+      // Tambahkan input judul (title)
+      let titleInput = form.querySelector('input[name="title"]');
+      if (!titleInput) {
+        titleInput = document.createElement('input');
+        titleInput.type = 'hidden';
+        titleInput.name = 'title';
+        form.appendChild(titleInput);
+      }
       titleInput.value = title;
-      form.appendChild(titleInput);
 
+      // Tambahkan input to_do_content[]
       lines.forEach(line => {
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -428,25 +502,44 @@
         form.appendChild(input);
       });
 
-      document.body.appendChild(form);
       form.submit();
     }
 
     function deleteTodo(button) {
-      if (confirm("Hapus To-Do ini?")) {
-        const card = button.closest('.card');
-        card.remove();
-        updateEmptyMessage();
-      }
+      const card = button.closest('.card');
+      const todoId = card.dataset.id;
+
+      const deleteForm = document.getElementById('deleteForm');
+      deleteForm.action = `/user/home/${todoId}`;
+
+      document.getElementById('confirmDeleteModal').style.display = 'flex';
     }
 
-    function editTodo(button) {
-      const card = button.closest('.card');
-      openForm(card);
+    function closeDeleteModal() {
+      document.getElementById('confirmDeleteModal').style.display = 'none';
+    }
+
+    function showErrorModal() {
+      document.getElementById('errorModal').style.display = 'flex';
+    }
+
+    function closeErrorModal() {
+      document.getElementById('errorModal').style.display = 'none';
+    }
+
+    function showAlertModal() {
+      document.getElementById('alertModal').style.display = 'flex';
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').style.display = 'none';
     }
 
     window.addEventListener('click', e => {
       if (e.target.id === 'todoModal') closeForm();
+      if (e.target.id === 'confirmDeleteModal') closeDeleteModal();
+      if (e.target.id === 'alertModal') closeAlertModal();
+      if (e.target.id === 'errorModal') closeErrorModal();
     });
 
     function updateEmptyMessage() {
@@ -455,10 +548,29 @@
       emptyMessage.style.display = todoList.children.length === 0 ? "block" : "none";
     }
 
+    function showToast(message = "Action successful!", duration = 3000) {
+      const toast = document.getElementById("toastNotification");
+      toast.textContent = message;
+      toast.classList.add("show");
+      toast.classList.remove("hide");
+
+      setTimeout(() => {
+        toast.classList.add("hide");
+        toast.classList.remove("show");
+      }, duration);
+    }
+
     window.onload = function () {
       updateEmptyMessage();
     };
   </script>
 
 </body>
+  @if (session('toast'))
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      showToast(@json(session('toast')));
+    });
+  </script>
+  @endif
 </html>

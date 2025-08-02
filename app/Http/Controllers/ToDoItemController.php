@@ -20,9 +20,9 @@ class ToDoItemController extends Controller
             return redirect()->route('user.login')->with('error', 'You must be logged in to access this page.');
         }
 
-        $item = ToDoItem::where('user_id', Auth::id())->get();
+        $items = ToDoItem::where('user_id', Auth::id())->get();
 
-        return view('user.home', compact('user', 'item'));
+        return view('user.home', compact('user', 'items'));
     }
 
     public function addToDoList(Request $request)
@@ -38,35 +38,45 @@ class ToDoItemController extends Controller
             'title' => $request->title,
             'to_do_content' => implode("\n", $request->to_do_content),
         ]);
-    
-        return redirect()->route('user.home')->with('success', 'ToDo item added!');
+
+        return redirect()->route('user.home')->with('toast', 'To-Do list successfully created!');
     }
     
-    // public function editToDoList(Request $request, $id)
-    // {
-    //     $request->validate([
-    //         'title' => 'required|string|max:255',
-    //         'to_do_content' => 'required|array|min:1',
-    //         'to_do_content.*' => 'required|string|max:255',
-    //     ]);
-    
-    //     $todoItem = ToDoItem::findOrFail($id);
-    //     $todoItem->update([
-    //         'title' => $request->title,
-    //         'to_do_content' => implode("\n", $request->to_do_content),
-    //         'updated_at' => now(),
-    //     ]);
-    
-    //     return redirect()->route('user.home')->with('success', 'ToDo item updated!');
-    // }
+    public function editToDoList($id)
+    {
+        $todoItem = ToDoItem::findOrFail($id);
+        $toDoContent = explode("\n", $todoItem->to_do_content);
 
-    // public function deleteToDoList($id)
-    // {
-    //     $todoItem = ToDoItem::findOrFail($id);
-    //     $todoItem->delete();
+        return view('user.edit-todo', compact('todoItem', 'toDoContent'));
+    }
 
-    //     return redirect()->route('user.home')->with('success', 'ToDo item deleted!');
-    // }
+    public function updateToDoList(Request $request, $id)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'to_do_content' => 'required|array|min:1',
+            'to_do_content.*' => 'required|string|max:255',
+        ]);
+    
+        $todoItem = ToDoItem::findOrFail($id);
+        $todoItem->update([
+            'title' => $request->title,
+            'to_do_content' => implode("\n", $request->to_do_content),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->route('user.home')->with('toast', 'To-Do list successfully Updated!');
+    }
+
+    public function deleteToDo($id)
+    {
+        $item = ToDoItem::findOrFail($id);
+        $item->delete();
+    
+        return redirect()->back()
+            ->with('toast', 'To-Do list successfully deleted!');
+    }
+    
 
     public function index()
     {

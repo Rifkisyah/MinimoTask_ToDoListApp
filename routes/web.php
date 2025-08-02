@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ToDoItemController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -98,4 +99,14 @@ Route::put('/user/home/{id}', [ToDoItemController::class, 'updateToDoList'])->na
 
 Route::delete('/user/home/{id}', [ToDoItemController::class, 'deleteToDo'])->name('user.delete-todo');
 
+// ============================================ test email ==============================================================
+
+Route::get('/test-email', function () {
+    Mail::raw('Tes kirim email dari Laravel', function ($message) {
+        $message->to('emailkamu@example.com')
+                ->subject('Tes Email');
+    });
+
+    return 'Email sudah dikirim!';
+});
 
